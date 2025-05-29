@@ -28,16 +28,6 @@ This is useful for reviewing which files or directories are currently excluded f
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // runListCommand is the function that will be executed when the list command is called
@@ -54,6 +44,5 @@ func runListCommand(f io.Reader, _ []string) error {
 		return fmt.Errorf("error reading exclude file: %w", err)
 	}
 
-	// You can add more functionality as needed
 	return nil
 }
