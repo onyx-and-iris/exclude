@@ -13,8 +13,7 @@ builds:
     goos:
       - linux
       - windows
-    goarch:
-      - amd64
+      - darwin
 
 archives:
   - formats: ['tar.gz']
