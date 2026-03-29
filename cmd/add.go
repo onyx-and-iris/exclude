@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/spf13/cobra"
 )
@@ -15,27 +16,37 @@ var addCmd = &cobra.Command{
 This is useful for excluding files or directories from version control without modifying the .gitignore file.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		f, ok := FileFromContext(cmd.Context())
+		ctx, ok := ContextObjectFromContext(cmd.Context())
 		if !ok {
 			return fmt.Errorf("no exclude file found in context")
 		}
-		return runAddCommand(f, args)
+		return runAddCommand(ctx.Out, ctx.File, args)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(addCmd)
+	RootCmd.AddCommand(addCmd)
 }
 
-func runAddCommand(f io.Writer, args []string) error {
-	for _, pattern := range args {
-		if _, err := fmt.Fprintln(f, pattern); err != nil {
-			return fmt.Errorf("error writing to exclude file: %w", err)
-		}
+// runAddCommand adds the specified patterns to the exclude file, ensuring no duplicates
+// It handles both file and in-memory buffer cases for testing
+func runAddCommand(out io.Writer, f io.ReadWriter, args []string) error {
+	existingPatterns, err := readExistingPatterns(f)
+	if err != nil {
+		return fmt.Errorf("error reading existing patterns: %v", err)
 	}
-	fmt.Println("Patterns added to .git/info/exclude file:")
+
 	for _, pattern := range args {
-		fmt.Println(" -", pattern)
+		if slices.Contains(existingPatterns, pattern) {
+			fmt.Fprintf(out, "Pattern '%s' already exists in the exclude file. Skipping.\n", pattern)
+			continue
+		}
+
+		_, err := fmt.Fprintln(f, pattern)
+		if err != nil {
+			return fmt.Errorf("error writing to exclude file: %v", err)
+		}
+		fmt.Fprintf(out, "Added pattern '%s' to the exclude file.\n", pattern)
 	}
 	return nil
 }

@@ -2,20 +2,27 @@ package cmd
 
 import (
 	"context"
+	"io"
 	"os"
 )
 
 type contextKey string
 
-const fileContextKey contextKey = "excludeFile"
+const contextObjectKey = contextKey("contextObject")
 
-// ContextWithFile returns a new context with the given file set.
-func ContextWithFile(ctx context.Context, file *os.File) context.Context {
-	return context.WithValue(ctx, fileContextKey, file)
+type contextObject struct {
+	File *os.File
+	Out  io.Writer
 }
 
-// FileFromContext retrieves the file from the context, if it exists.
-func FileFromContext(ctx context.Context) (*os.File, bool) {
-	file, ok := ctx.Value(fileContextKey).(*os.File)
-	return file, ok
+func createContext(file *os.File, out io.Writer) context.Context {
+	return context.WithValue(context.Background(), contextObjectKey, &contextObject{
+		File: file,
+		Out:  out,
+	})
+}
+
+func ContextObjectFromContext(ctx context.Context) (*contextObject, bool) {
+	obj, ok := ctx.Value(contextObjectKey).(*contextObject)
+	return obj, ok
 }

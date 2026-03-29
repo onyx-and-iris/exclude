@@ -3,7 +3,7 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/spf13/cobra"
 )
@@ -15,36 +15,42 @@ var resetCmd = &cobra.Command{
 	Long: `The reset command clears all patterns from the .git/info/exclude file.
 This is useful for starting fresh or removing all exclusions at once.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		f, ok := FileFromContext(cmd.Context())
+		ctx, ok := ContextObjectFromContext(cmd.Context())
 		if !ok {
 			return fmt.Errorf("no exclude file found in context")
 		}
-		return runResetCommand(f)
+		return resetAndWriteExcludeFile(ctx.File)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(resetCmd)
+	RootCmd.AddCommand(resetCmd)
 }
 
-//go:embed template/exclude
-var defaultExcludeFile string
+// Truncate and seek to beginning
+type truncater interface{ Truncate(size int64) error }
 
-// runResetCommand clears the exclude file
-func runResetCommand(f *os.File) error {
-	// Clear the exclude file by truncating it
-	if err := f.Truncate(0); err != nil {
+// resetAndWriteExcludeFile truncates and resets the file, then writes the default content
+func resetAndWriteExcludeFile(f any) error {
+	// Try to assert to io.ReadWriteSeeker for file operations
+	rws, ok := f.(io.ReadWriteSeeker)
+	if !ok {
+		// If not a file, try as io.Writer (for test buffers)
+		if w, ok := f.(io.Writer); ok {
+			return writeDefaultExcludeContent(w)
+		}
+		return fmt.Errorf("provided file does not support ReadWriteSeeker or Writer")
+	}
+
+	t, ok := f.(truncater)
+	if !ok {
+		return fmt.Errorf("provided file does not support Truncate")
+	}
+	if err := t.Truncate(0); err != nil {
 		return fmt.Errorf("error truncating exclude file: %w", err)
 	}
-	// Reset the file pointer to the beginning
-	if _, err := f.Seek(0, 0); err != nil {
+	if _, err := rws.Seek(0, 0); err != nil {
 		return fmt.Errorf("error seeking to the beginning of exclude file: %w", err)
 	}
-
-	// Write the default exclude patterns to the file
-	if _, err := f.WriteString(defaultExcludeFile); err != nil {
-		return fmt.Errorf("error writing default exclude file: %w", err)
-	}
-
-	return nil
+	return writeDefaultExcludeContent(rws)
 }
