@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -24,31 +25,32 @@ var RootCmd = &cobra.Command{
 It allows you to add, list, and delete patterns from the exclude file easily.
 This tool is particularly useful for developers who want to keep their repository clean 
 by excluding certain files or directories from version control.`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if _, err := os.Stat(".git"); os.IsNotExist(err) {
-			cmd.Println("Error: This command must be run in a Git repository.")
-			os.Exit(1)
+			return fmt.Errorf("this command must be run in a Git repository")
 		}
 
 		path, err := cmd.Flags().GetString("path")
 		if err != nil {
-			cmd.Println("Error getting path flag:", err)
-			os.Exit(1)
+			return fmt.Errorf("error reading path flag: %w", err)
 		}
 
 		f, err := os.OpenFile(filepath.Join(path, "exclude"), os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
-			cmd.Println("Error opening .git/info/exclude file:", err)
-			os.Exit(1)
+			return fmt.Errorf("error opening exclude file: %w", err)
 		}
 
 		ctx := createContext(f, cmd.OutOrStdout())
 		cmd.SetContext(ctx)
+		return nil
 	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if obj, ok := ContextObjectFromContext(cmd.Context()); ok {
-			defer obj.File.Close()
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		if ctx, ok := ContextObjectFromContext(cmd.Context()); ok {
+			defer ctx.File.Close()
+		} else {
+			return fmt.Errorf("unable to retrieve context after command execution")
 		}
+		return nil
 	},
 }
 
