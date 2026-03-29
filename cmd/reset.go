@@ -19,7 +19,7 @@ This is useful for starting fresh or removing all exclusions at once.`,
 		if !ok {
 			return fmt.Errorf("no exclude file found in context")
 		}
-		return resetAndWriteExcludeFile(ctx.File)
+		return resetAndWriteExcludeFile(ctx.Out, ctx.File)
 	},
 }
 
@@ -31,7 +31,7 @@ func init() {
 type truncater interface{ Truncate(size int64) error }
 
 // resetAndWriteExcludeFile truncates and resets the file, then writes the default content
-func resetAndWriteExcludeFile(f any) error {
+func resetAndWriteExcludeFile(out io.Writer, f any) error {
 	// Try to assert to io.ReadWriteSeeker for file operations
 	rws, ok := f.(io.ReadWriteSeeker)
 	if !ok {
@@ -52,5 +52,10 @@ func resetAndWriteExcludeFile(f any) error {
 	if _, err := rws.Seek(0, 0); err != nil {
 		return fmt.Errorf("error seeking to the beginning of exclude file: %w", err)
 	}
-	return writeDefaultExcludeContent(rws)
+	err := writeDefaultExcludeContent(rws)
+	if err != nil {
+		return fmt.Errorf("error writing default exclude content: %w", err)
+	}
+	fmt.Fprintf(out, "Exclude file reset successfully.\n")
+	return nil
 }

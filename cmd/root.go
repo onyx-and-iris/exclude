@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const defaultExcludeFileContent = `# git ls-files --others --exclude-from=.git/info/exclude
@@ -30,12 +32,7 @@ by excluding certain files or directories from version control.`,
 			return fmt.Errorf("this command must be run in a Git repository")
 		}
 
-		path, err := cmd.Flags().GetString("path")
-		if err != nil {
-			return fmt.Errorf("error reading path flag: %w", err)
-		}
-
-		f, err := os.OpenFile(filepath.Join(path, "exclude"), os.O_RDWR|os.O_APPEND, 0644)
+		f, err := os.OpenFile(filepath.Join(viper.GetString("path"), "exclude"), os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
 			return fmt.Errorf("error opening exclude file: %w", err)
 		}
@@ -57,4 +54,11 @@ by excluding certain files or directories from version control.`,
 func init() {
 	RootCmd.PersistentFlags().
 		StringP("path", "p", ".git/info/", "Path the exclude file resides in (default is .git/info/)")
+
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.SetEnvPrefix("EXCLUDE")
+	viper.AutomaticEnv()
+	if err := viper.BindPFlag("path", RootCmd.PersistentFlags().Lookup("path")); err != nil {
+		panic(fmt.Errorf("unable to bind flags: %w", err))
+	}
 }

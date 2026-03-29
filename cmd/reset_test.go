@@ -9,7 +9,7 @@ import (
 func TestRunResetCommand(t *testing.T) {
 	var buf bytes.Buffer
 
-	if err := resetAndWriteExcludeFile(&buf); err != nil {
+	if err := resetAndWriteExcludeFile(&buf, &buf); err != nil {
 		t.Fatalf("resetAndWriteExcludeFile failed: %v", err)
 	}
 
