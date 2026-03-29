@@ -28,7 +28,8 @@ It allows you to add, list, and delete patterns from the exclude file easily.
 This tool is particularly useful for developers who want to keep their repository clean 
 by excluding certain files or directories from version control.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Name() == "completion" || cmd.Name() == "help" {
+		if strings.HasPrefix(cmd.CommandPath(), "exclude completion") ||
+			strings.HasPrefix(cmd.CommandPath(), "exclude help") {
 			return nil
 		}
 
@@ -46,7 +47,8 @@ by excluding certain files or directories from version control.`,
 		return nil
 	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Name() == "completion" || cmd.Name() == "help" {
+		if strings.HasPrefix(cmd.CommandPath(), "exclude completion") ||
+			strings.HasPrefix(cmd.CommandPath(), "exclude help") {
 			return nil
 		}
 
