@@ -32,13 +32,8 @@ func init() {
 }
 
 // runDelCommand deletes the specified pattern from the exclude file and writes the updated content back
-// It handles both file and in-memory buffer cases for testing
-func runDelCommand(out io.Writer, f any, pattern string) error {
-	r, ok := f.(io.Reader)
-	if !ok {
-		return fmt.Errorf("provided file does not support Reader")
-	}
-	existingPatterns, err := readExistingPatterns(r)
+func runDelCommand(out io.Writer, f readWriteTruncater, pattern string) error {
+	existingPatterns, err := readExistingPatterns(f)
 	if err != nil {
 		return fmt.Errorf("error reading existing patterns: %v", err)
 	}
@@ -55,29 +50,18 @@ func runDelCommand(out io.Writer, f any, pattern string) error {
 		}
 	}
 
-	var w io.Writer
-	if t, ok := f.(truncater); ok {
-		if err := t.Truncate(0); err != nil {
-			return fmt.Errorf("error truncating exclude file: %w", err)
-		}
-		if s, ok := f.(io.Seeker); ok {
-			if _, err := s.Seek(0, 0); err != nil {
-				return fmt.Errorf("error seeking to the beginning of exclude file: %w", err)
-			}
-		}
-		w, _ = f.(io.Writer)
-	} else if buf, ok := f.(interface{ Reset() }); ok {
-		buf.Reset()
-		w, _ = f.(io.Writer)
-	} else {
-		return fmt.Errorf("provided file does not support writing")
+	if err := f.Truncate(0); err != nil {
+		return fmt.Errorf("error truncating exclude file: %w", err)
+	}
+	if _, err := f.Seek(0, 0); err != nil {
+		return fmt.Errorf("error seeking to the beginning of exclude file: %w", err)
 	}
 
-	if err := writeDefaultExcludeContent(w); err != nil {
+	if err := writeDefaultExcludeContent(f); err != nil {
 		return fmt.Errorf("error writing default exclude content: %w", err)
 	}
 	for _, p := range updatedPatterns {
-		if _, err := fmt.Fprintln(w, p); err != nil {
+		if _, err := fmt.Fprintln(f, p); err != nil {
 			return fmt.Errorf("error writing updated patterns to exclude file: %v", err)
 		}
 	}

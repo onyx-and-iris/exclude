@@ -10,40 +10,43 @@ func TestRunDelCommand(t *testing.T) {
 		name            string
 		initialContent  string
 		patternToDelete string
-		expectedOutput  string
+		expectedOut     string
 		expectedContent string
 	}{
 		{
 			name:            "Delete existing pattern",
 			initialContent:  defaultExcludeFileContent + "node_modules\n.DS_Store\n",
 			patternToDelete: "node_modules",
-			expectedOutput:  defaultExcludeFileContent + ".DS_Store\n" + "Deleted pattern 'node_modules' from the exclude file.\n",
+			expectedOut:     "Deleted pattern 'node_modules' from the exclude file.\n",
+			expectedContent: defaultExcludeFileContent + ".DS_Store\n",
 		},
 		{
 			name:            "Delete non-existing pattern",
 			initialContent:  defaultExcludeFileContent + "node_modules\n.DS_Store\n",
 			patternToDelete: "dist",
-			expectedOutput:  "Pattern 'dist' not found in the exclude file. Nothing to delete.\n",
+			expectedOut:     "Pattern 'dist' not found in the exclude file. Nothing to delete.\n",
+			expectedContent: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			buf.WriteString(tt.initialContent)
+			var out bytes.Buffer
+			var f seekBuffer
+			f.WriteString(tt.initialContent)
 
-			err := runDelCommand(&buf, &buf, tt.patternToDelete)
+			err := runDelCommand(&out, &f, tt.patternToDelete)
 			if err != nil {
 				t.Fatalf("runDelCommand returned an error: %v", err)
 			}
 
-			if buf.String() != tt.expectedOutput {
-				t.Errorf(
-					"Expected output and content:\n%s\nGot:\n%s",
-					tt.expectedOutput,
-					buf.String(),
-				)
+			if out.String() != tt.expectedOut {
+				t.Errorf("Expected output:\n%s\nGot:\n%s", tt.expectedOut, out.String())
+			}
+			if f.String() != tt.expectedContent {
+				t.Errorf("Expected file content:\n%s\nGot:\n%s", tt.expectedContent, f.String())
 			}
 		})
 	}
 }
+

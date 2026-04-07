@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// readWriteTruncater is the interface satisfied by *os.File that allows
+// reading, writing, seeking, and truncating — the operations needed to rewrite the exclude file.
+type readWriteTruncater interface {
+	io.ReadWriteSeeker
+	Truncate(size int64) error
+}
+
 // readExistingPatterns reads the existing patterns from the exclude file, ignoring comments and empty lines
 func readExistingPatterns(f io.Reader) ([]string, error) {
 	var patterns []string
