@@ -4,7 +4,7 @@
 
 # exclude
 
-Exclude files from local git tracking
+[Exclude files][exclude] from local git tracking
 
 ## Install
 
@@ -60,3 +60,6 @@ exclude reset
 
 -   [spf13](https://github.com/spf13) for the [cobra](https://github.com/spf13/cobra) and [viper](https://github.com/spf13/viper) packages.
 -   The developers at [charmbracelet](https://github.com/charmbracelet) for the [fang](https://github.com/charmbracelet/fang) package.
+
+
+[exclude]: https://docs.github.com/en/get-started/git-basics/ignoring-files#excluding-local-files-without-creating-a-gitignore-file
